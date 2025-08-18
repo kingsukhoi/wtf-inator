@@ -7,6 +7,7 @@ import (
 )
 
 type Conf struct {
+	Port     string `yaml:"port" env:"PORT" env-default:":1323"`
 	DbUrl    string `yaml:"dbUrl" env:"DATABASE_URL" env-required:"true"`
 	Server   Server `yaml:"server"`
 	JsonLogs bool   `yaml:"jsonLogs" env:"JSON_LOGS" env-default:"false"`
@@ -14,7 +15,7 @@ type Conf struct {
 
 type Server struct {
 	Url             string `yaml:"url" env:"SERVER_URL" env-required:"true"`
-	HealthCheckPath string `yaml:"healthCheckPath" env:"HEALTH_CHECK_Path" env-default:"/healthz"`
+	HealthCheckPath string `yaml:"healthCheckPath" env:"HEALTH_CHECK_PATH" env-default:"/healthz"`
 }
 
 var configSingleton Conf

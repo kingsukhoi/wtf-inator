@@ -2,12 +2,15 @@ package main
 
 import (
 	"context"
+	"errors"
 	"log/slog"
+	"net/http"
 	"os"
 	"os/signal"
-	"syscall"
+	"time"
 
 	"github.com/kingsukhoi/wtf-inator/pkg/conf"
+	"github.com/kingsukhoi/wtf-inator/pkg/db"
 	"github.com/kingsukhoi/wtf-inator/pkg/proxy"
 	"github.com/kingsukhoi/wtf-inator/pkg/routes"
 )
@@ -27,16 +30,36 @@ func main() {
 		slog.SetDefault(logger)
 	}
 
+	//start up db pool
+	_ = db.MustGetDatabase()
+
 	e, err := routes.NewRouter()
 	if err != nil {
 		panic(err)
 	}
 
-	e.Logger.Fatal(e.Start(":1323"))
+	osInterruptContext, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
+	// Start server
+	go func() {
+		echoErr := e.Start(config.Port)
+		if echoErr != nil {
+			if errors.Is(echoErr, http.ErrServerClosed) {
+				slog.Info("shutting down the server")
+			} else {
+				slog.Error("error with server", "exception", echoErr)
+			}
+		}
+	}()
 
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	// Wait for interrupt signal to gracefully shut down the server with a timeout of 10 seconds.
+	<-osInterruptContext.Done()
+	cleanupContext, cancel := context.WithTimeout(context.Background(), 40*time.Second)
 	defer cancel()
-	<-ctx.Done()
+	err = e.Shutdown(cleanupContext)
+	if err != nil {
+		slog.Error("error with server shutdown", "exception", err)
+	}
 
 	proxy.Wait()
 }

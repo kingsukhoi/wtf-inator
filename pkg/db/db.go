@@ -21,6 +21,12 @@ func MustGetDatabase() *pgxpool.Pool {
 			panic(err)
 		}
 		db = pool
+
+		err = db.Ping(context.Background())
+		if err != nil {
+			panic(err)
+		}
+
 	})
 
 	return db

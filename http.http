@@ -1,6 +1,9 @@
 ### Health check request bin
 GET localhost:8081/healthz
 
+### Health check request bin
+GET localhost:8081/
+
 ### try proxy
 POST http://localhost:1323/test-wtf?id=hi
 Content-Type: application/json
@@ -8,3 +11,13 @@ Content-Type: application/json
 {
   "farsos": "be testing"
 }
+
+### try response code
+POST http://localhost:1323/respCode/500
+Content-Type: application/json
+
+{
+  "farsos": "be testing"
+}
+
+

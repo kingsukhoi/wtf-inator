@@ -27,7 +27,8 @@ type requestDto struct {
 
 func processRequest(request requestDto) {
 	defer currWg.Done()
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
 
 	conn := db.MustGetDatabase()
 	tx, err := conn.BeginTx(ctx, pgx.TxOptions{})
