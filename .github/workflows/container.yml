@@ -1,0 +1,77 @@
+# This workflow will build a golang project
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
+
+name: Build Container
+
+on:
+  push:
+    branches: ["master"]
+    paths-ignore:
+      - qodana.yaml
+      - sqlc.yaml
+      - http.http
+      - query.sql
+      - docker-compose.yaml
+      - .gitignore
+      - .github/dependabot.yml
+
+jobs:
+  build:
+    concurrency:
+      group: "build-container"
+      cancel-in-progress: true
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      attestations: write
+      id-token: write
+      contents: read
+    steps:
+      - name: Docker Setup Buildx
+        uses: docker/setup-buildx-action@v3.8.0
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3.3.0
+        with:
+          registry: https://ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/checkout@v4
+      - name: Setup Pack
+        run: |
+          sudo add-apt-repository ppa:cncf-buildpacks/pack-cli && \
+          sudo apt-get update && \
+          sudo apt-get install pack-cli
+      - name: Get Short SHA
+        id: shortsha
+        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+      - name: Cache
+        uses: actions/cache@v4
+        with:
+          path: ./pack-cache
+          key: "${{ hashFiles('go.mod', 'go.sum') }}"
+      - name: Build Container
+        id: build
+        run: |
+          pack build --publish ghcr.io/${{github.repository}}:${{ github.sha }}  -t ghcr.io/${{github.repository}}:latest -t ghcr.io/${{github.repository}}:${{ steps.shortsha.outputs.sha_short }} -B paketobuildpacks/builder-jammy-tiny \
+            --env BP_GO_TARGETS="cmd/web" --cache='type=build;format=bind;source=./pack-cache'
+          docker pull ghcr.io/${{github.repository}}:${{ github.sha }} > /dev/null
+          echo "image_sha=$(docker image inspect ghcr.io/${{github.repository}}:${{ github.sha }} | jq '.[0].RepoDigests[0]' | cut -d ':' -f 2 | cut -d '"' -f 1)" >> $GITHUB_OUTPUT
+      - name: Run Trivy scanner
+        uses: aquasecurity/trivy-action@0.29.0
+        with:
+          image-ref: "ghcr.io/${{github.repository}}:${{ github.sha }}"
+          output: trivy.txt
+          ignore-unfixed: true
+      - name: Publish Trivy Output to Summary
+        run: |
+          if [[ -s trivy.txt ]]; then
+            {
+              echo "### Security Output"
+              echo "<details><summary>Click to expand</summary>"
+              echo ""
+              echo '```terraform'
+              cat trivy.txt
+              echo '```'
+              echo "</details>"
+            } >> $GITHUB_STEP_SUMMARY
+          fi
