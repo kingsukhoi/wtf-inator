@@ -14,8 +14,9 @@ type Conf struct {
 }
 
 type Server struct {
-	Url             string `yaml:"url" env:"SERVER_URL" env-required:"true"`
-	HealthCheckPath string `yaml:"healthCheckPath" env:"HEALTH_CHECK_PATH" env-default:"/healthz"`
+	Url             string   `yaml:"url" env:"SERVER_URL" env-required:"true"`
+	HealthCheckPath string   `yaml:"healthCheckPath" env:"HEALTH_CHECK_PATH" env-default:"/healthz"`
+	IgnoredPaths    []string `yaml:"ignoredPaths" env:"IGNORED_PATHS" env-default:""`
 }
 
 var configSingleton Conf

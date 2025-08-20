@@ -13,11 +13,15 @@ Content-Type: application/json
 }
 
 ### try response code
-POST http://localhost:1323/respCode/500
+POST http://localhost:1323/respCode/500?test=query
 Content-Type: application/json
 
 {
   "farsos": "be testing"
 }
+
+### Health check through proxy
+GET http://localhost:1323/healthz
+Content-Type: application/json
 
 

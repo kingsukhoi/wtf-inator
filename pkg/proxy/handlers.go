@@ -4,9 +4,11 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"slices"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/kingsukhoi/wtf-inator/pkg/conf"
 	"github.com/kingsukhoi/wtf-inator/pkg/constants"
 	"github.com/kingsukhoi/wtf-inator/pkg/helpers"
 	"github.com/labstack/echo/v4"
@@ -14,14 +16,17 @@ import (
 
 func responseHandler(resp *http.Response) error {
 
+	requestId, exists := resp.Request.Context().Value(constants.ContextRequestIdKey).(uuid.UUID)
+	if !exists {
+		return nil
+	}
+
 	clonedBody, clonedReadCloser, err2 := helpers.CloneReadCloser(resp.Body)
 	if err2 != nil {
 		return err2
 	}
 
 	resp.Body = clonedReadCloser
-
-	requestId := resp.Request.Context().Value(constants.ContextRequestIdKey).(uuid.UUID)
 
 	sqlResponse := responseDto{
 		id:           requestId,
@@ -39,6 +44,12 @@ func responseHandler(resp *http.Response) error {
 }
 
 func (wtfProxy *WtfProxy) RequestHandler(c echo.Context) error {
+
+	config := conf.MustGetConfig()
+	if slices.Contains(config.Server.IgnoredPaths, c.Request().URL.Path) {
+		wtfProxy.Proxy.ServeHTTP(c.Response().Writer, c.Request())
+		return nil
+	}
 
 	currId, _ := uuid.NewV7()
 
