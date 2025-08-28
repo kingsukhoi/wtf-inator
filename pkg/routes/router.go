@@ -4,6 +4,7 @@ import (
 	"github.com/kingsukhoi/wtf-inator/pkg/conf"
 	"github.com/kingsukhoi/wtf-inator/pkg/proxy"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 )
 
 func NewRouter() (*echo.Echo, error) {
@@ -15,6 +16,7 @@ func NewRouter() (*echo.Echo, error) {
 	}
 
 	e := echo.New()
+	e.Use(middleware.Recover())
 
 	e.Any("/*", currProxy.RequestHandler)
 

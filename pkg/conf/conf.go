@@ -1,6 +1,7 @@
 package conf
 
 import (
+	"strings"
 	"sync"
 
 	"github.com/ilyakaznacheev/cleanenv"
@@ -33,6 +34,10 @@ func MustGetConfig(configFile ...string) Conf {
 		}
 		if err != nil {
 			panic(err)
+		}
+
+		for i := range configSingleton.Server.IgnoredPaths {
+			configSingleton.Server.IgnoredPaths[i] = strings.TrimSpace(configSingleton.Server.IgnoredPaths[i])
 		}
 	})
 	return configSingleton

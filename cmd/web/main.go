@@ -13,6 +13,7 @@ import (
 	"github.com/kingsukhoi/wtf-inator/pkg/db"
 	"github.com/kingsukhoi/wtf-inator/pkg/proxy"
 	"github.com/kingsukhoi/wtf-inator/pkg/routes"
+	slogecho "github.com/samber/slog-echo"
 )
 
 func main() {
@@ -22,11 +23,12 @@ func main() {
 	lvl := new(slog.LevelVar)
 	lvl.Set(slog.LevelDebug)
 
+	var logger *slog.Logger
 	if config.JsonLogs {
-		logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: lvl}))
+		logger = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: lvl}))
 		slog.SetDefault(logger)
 	} else {
-		logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: lvl}))
+		logger = slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: lvl}))
 		slog.SetDefault(logger)
 	}
 
@@ -37,6 +39,14 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	slogConfig := slogecho.Config{
+		WithSpanID:    true,
+		WithTraceID:   true,
+		WithRequestID: true,
+	}
+
+	e.Use(slogecho.NewWithConfig(logger, slogConfig))
 
 	osInterruptContext, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
