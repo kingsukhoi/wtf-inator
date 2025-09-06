@@ -9,6 +9,7 @@ import (
 	"os/signal"
 	"time"
 
+	"github.com/kingsukhoi/wtf-inator/pkg/background"
 	"github.com/kingsukhoi/wtf-inator/pkg/conf"
 	"github.com/kingsukhoi/wtf-inator/pkg/db"
 	"github.com/kingsukhoi/wtf-inator/pkg/proxy"
@@ -61,7 +62,7 @@ func main() {
 			}
 		}
 	}()
-
+	go background.StartHealthCheckWorker(osInterruptContext)
 	// Wait for interrupt signal to gracefully shut down the server with a timeout of 10 seconds.
 	<-osInterruptContext.Done()
 	cleanupContext, cancel := context.WithTimeout(context.Background(), 40*time.Second)

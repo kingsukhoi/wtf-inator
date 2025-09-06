@@ -2,7 +2,6 @@ package background
 
 import (
 	"context"
-	"log"
 	"log/slog"
 	"net/http"
 	"net/url"
@@ -10,6 +9,10 @@ import (
 
 	"github.com/kingsukhoi/wtf-inator/pkg/conf"
 )
+
+var client = &http.Client{
+	Timeout: 5 * time.Second,
+}
 
 func StartHealthCheckWorker(ctx context.Context) {
 	ticker := time.NewTicker(10 * time.Second)
@@ -21,7 +24,7 @@ func StartHealthCheckWorker(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			log.Println("Health check worker shutting down...")
+			slog.Info("Health check worker shutting down...")
 			return
 		case <-ticker.C:
 			performHealthCheck()
@@ -31,9 +34,6 @@ func StartHealthCheckWorker(ctx context.Context) {
 
 func performHealthCheck() {
 	// Create a client with timeout to avoid hanging requests
-	client := &http.Client{
-		Timeout: 5 * time.Second,
-	}
 
 	config := conf.MustGetConfig()
 
